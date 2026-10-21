@@ -10,7 +10,10 @@ API_KEY = os.environ.get("OPEN_POKER_API_KEY") or open('/home/sandbox/vetting/.o
 WS_URL = "wss://openpoker.ai/ws"
 BUY_IN = 2000          # 100bb at 10/20 - disciplined depth
 SESSION_SECONDS = int(os.environ.get("SESSION_SECONDS", "720"))
-LOG = open(os.environ.get("POKER_LOG", "/home/sandbox/vetting/poker/sessions.log"), "a")
+_log_path = os.environ.get("POKER_LOG", "sessions.log")
+_d = os.path.dirname(_log_path)
+if _d: os.makedirs(_d, exist_ok=True)
+LOG = open(_log_path, "a")
 
 RANKS = "23456789TJQKA"; RVAL = {r: i+2 for i, r in enumerate(RANKS)}
 
