@@ -1,0 +1,164 @@
+{
+ "allin": {
+  "hands": 71,
+  "vpip": 52.1,
+  "pfr": 42.3,
+  "af": 1.29,
+  "wtsd": 33.3,
+  "winpct": 32.4,
+  "showdowns": 14
+ },
+ "gmoney": {
+  "hands": 62,
+  "vpip": 46.8,
+  "pfr": 29.0,
+  "af": 0.85,
+  "wtsd": 30.3,
+  "winpct": 37.1,
+  "showdowns": 10
+ },
+ "mmailxy0816": {
+  "hands": 51,
+  "vpip": 13.7,
+  "pfr": 9.8,
+  "af": 1.0,
+  "wtsd": 22.2,
+  "winpct": 13.7,
+  "showdowns": 2
+ },
+ "StarBot": {
+  "hands": 50,
+  "vpip": 22.0,
+  "pfr": 18.0,
+  "af": 0.33,
+  "wtsd": 5.3,
+  "winpct": 22.0,
+  "showdowns": 1
+ },
+ "ENERGETICCHIP": {
+  "hands": 45,
+  "vpip": 37.8,
+  "pfr": 24.4,
+  "af": 1.17,
+  "wtsd": 26.3,
+  "winpct": 15.6,
+  "showdowns": 5
+ },
+ "Zora": {
+  "hands": 33,
+  "vpip": 75.8,
+  "pfr": 54.5,
+  "af": 1.2,
+  "wtsd": 33.3,
+  "winpct": 57.6,
+  "showdowns": 6
+ },
+ "jaegerlkirker": {
+  "hands": 31,
+  "vpip": 35.5,
+  "pfr": 12.9,
+  "af": 1.25,
+  "wtsd": 46.2,
+  "winpct": 19.4,
+  "showdowns": 6
+ },
+ "Rumina": {
+  "hands": 26,
+  "vpip": 34.6,
+  "pfr": 34.6,
+  "af": 3.0,
+  "wtsd": 7.7,
+  "winpct": 15.4,
+  "showdowns": 1
+ },
+ "karismakapur256": {
+  "hands": 25,
+  "vpip": 20.0,
+  "pfr": 16.0,
+  "af": 2.33,
+  "wtsd": 30.0,
+  "winpct": 24.0,
+  "showdowns": 3
+ },
+ "mephisto1419": {
+  "hands": 24,
+  "vpip": 12.5,
+  "pfr": 4.2,
+  "af": 1.33,
+  "wtsd": 50.0,
+  "winpct": 12.5,
+  "showdowns": 2
+ },
+ "panicdarts964": {
+  "hands": 22,
+  "vpip": 45.5,
+  "pfr": 27.3,
+  "af": 1.2,
+  "wtsd": 70.0,
+  "winpct": 40.9,
+  "showdowns": 7
+ },
+ "allInAmazonia": {
+  "hands": 19,
+  "vpip": 63.2,
+  "pfr": 5.3,
+  "af": 0.57,
+  "wtsd": 41.7,
+  "winpct": 21.1,
+  "showdowns": 5
+ },
+ "polyanskiy_egor": {
+  "hands": 17,
+  "vpip": 41.2,
+  "pfr": 35.3,
+  "af": 0.25,
+  "wtsd": 33.3,
+  "winpct": 47.1,
+  "showdowns": 3
+ },
+ "SvanBotV10": {
+  "hands": 17,
+  "vpip": 76.5,
+  "pfr": 11.8,
+  "af": 1.0,
+  "wtsd": 30.8,
+  "winpct": 41.2,
+  "showdowns": 4
+ },
+ "BMP": {
+  "hands": 17,
+  "vpip": 17.6,
+  "pfr": 17.6,
+  "af": 1.0,
+  "wtsd": 75.0,
+  "winpct": 23.5,
+  "showdowns": 3
+ },
+ "thuan_votan2": {
+  "hands": 16,
+  "vpip": 56.2,
+  "pfr": 18.8,
+  "af": 1.2,
+  "wtsd": 55.6,
+  "winpct": 12.5,
+  "showdowns": 5
+ },
+ "grey_hre42": {
+  "hands": 16,
+  "vpip": 37.5,
+  "pfr": 31.2,
+  "af": 1.0,
+  "wtsd": 37.5,
+  "winpct": 25.0,
+  "showdowns": 3
+ },
+ "MimicOctopus": {
+  "hands": 15,
+  "vpip": 46.7,
+  "pfr": 20.0,
+  "af": 0.5,
+  "wtsd": 33.3,
+  "winpct": 13.3,
+  "showdowns": 2
+ }
+}

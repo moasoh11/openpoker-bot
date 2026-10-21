@@ -5,6 +5,7 @@ Strategy notes in strategy.md. No real money; virtual chips only.
 """
 import asyncio, json, os, sys, time, uuid, random
 import websockets
+import strategy2 as S2
 
 API_KEY = os.environ.get("OPEN_POKER_API_KEY") or open('/home/sandbox/vetting/.openpoker-secret').read().split('openpoker_apikey=')[1].split('\n')[0].strip()
 WS_URL = "wss://openpoker.ai/ws"
@@ -146,6 +147,8 @@ class Bot:
         self.session_pnl = 0
         self.facing_raise_pf = False
         self.my_seat = None; self.dealer_seat = None; self.n_players = 2
+        self.seat_names = {}   # seat -> opponent name (player_joined / table_state)
+        self.opp_models = S2.load_opp_models() if hasattr(S2, "load_opp_models") else {}
 
     async def play(self):
         async with websockets.connect(WS_URL, additional_headers={"Authorization": f"Bearer {API_KEY}"},
@@ -219,6 +222,11 @@ class Bot:
             self.hole = msg["cards"]
         elif t == "community_cards":
             self.board = msg.get("cards", self.board)
+        elif t == "player_joined":
+            if msg.get("seat") is not None and msg.get("name"):
+                self.seat_names[msg["seat"]] = msg["name"]
+        elif t == "player_left":
+            self.seat_names.pop(msg.get("seat"), None)
         elif t == "player_action":
             if msg.get("street") == "preflop" and msg.get("action") in ("raise", "all_in") and msg.get("seat") != self.my_seat:
                 self.facing_raise_pf = True
@@ -239,6 +247,17 @@ class Bot:
         elif t == "table_closed" or t == "season_ended":
             await ws.send(json.dumps({"type": "join_lobby", "buy_in": BUY_IN}))
 
+    def table_archetypes(self):
+        types = set()
+        for name in self.seat_names.values():
+            m = (self.opp_models or {}).get(name)
+            if not m: continue
+            vp, pfr, wtsd = m.get("vpip", 0), m.get("pfr", 0), m.get("wtsd", 0)
+            if vp >= 55 and pfr >= 40: types.add("maniac")
+            elif vp >= 50 or wtsd >= 55: types.add("station")
+            elif vp < 25: types.add("nit")
+        return types
+
     async def decide(self, msg, ws):
         actions = {a["action"]: a for a in msg["valid_actions"]}
         pot = msg.get("pot") or 0
@@ -253,7 +272,10 @@ class Bot:
             late = False
             if self.my_seat is not None and self.dealer_seat is not None:
                 late = (self.my_seat == self.dealer_seat)
-            move, _ = preflop_decision(self.hole, actions, self.facing_raise_pf, late)
+            p_pf = dict(S2.V2)
+            tt_pf = self.table_archetypes()
+            if tt_pf and tt_pf <= {"nit"}: p_pf["pf_open_late"] = 20
+            move = S2.preflop_decision_v2(self.hole, self.facing_raise_pf, late, p_pf)
             if move == "raise" and can_raise:
                 amt = clamp(max(3 * 20, pot // 2 + 3 * 20), rmin, rmax)
                 return await self.act(ws, msg, "raise", amt)
@@ -267,50 +289,28 @@ class Bot:
             return await self.act(ws, msg, "fold" if "fold" in actions else ("check" if can_check else "call"))
 
         # postflop
-        strength, desc, outs, sd = classify(self.hole, self.board)
+        strength, desc, outs, sd, flags = S2.classify2(self.hole, self.board)
+        table_types = self.table_archetypes()
         to_call = call_amt
-        pot_after = pot + to_call
-        pot_odds = to_call / pot_after if pot_after > 0 else 1
-        equity_est = min(0.85, outs * (0.04 if len(self.board) == 3 else 0.02)) if outs else 0
 
-        def value_bet(frac):
-            if not can_raise: return None
-            return clamp(pot * frac, rmin, rmax)
-
-        if strength == "monster":
-            vb = value_bet(0.75)
-            if vb and random.random() < 0.85:
-                return await self.act(ws, msg, "raise", vb)
-            if can_check: return await self.act(ws, msg, "check")
+        # v2: texture-aware, value-only aggression, archetype-adjusted
+        P = dict(S2.V2)
+        if "station" in table_types:
+            P["value_frac_monster"] = 1.0; P["semibluff_freq"] = 0.0
+        if "maniac" in table_types:
+            P["medium_call_max_pot_frac"] = 0.30
+        move, frac = S2.postflop_decision_v2(strength, outs, to_call, pot, can_check, can_raise, len(self.board), P, random, flags)
+        if move == "raise" and can_raise:
+            amt = clamp(pot * (frac or 0.6), rmin, rmax)
+            return await self.act(ws, msg, "raise", amt)
+        if move == "call" and to_call > 0 and "call" in actions:
             return await self.act(ws, msg, "call")
-
-        if strength == "strong":
-            if to_call == 0 and can_raise and random.random() < 0.75:
-                return await self.act(ws, msg, "raise", value_bet(0.6))
-            if to_call > 0:
-                # call reasonable bets; fold to very large ones unless draw is big
-                if to_call <= pot * 0.8 or outs >= 12:
-                    return await self.act(ws, msg, "call")
-                return await self.act(ws, msg, "fold")
-            if can_check: return await self.act(ws, msg, "check")
-            return await self.act(ws, msg, "call")
-
-        if strength == "medium":
-            if to_call == 0:
-                if can_raise and outs >= 8 and random.random() < 0.4:  # occasional semi-bluff
-                    return await self.act(ws, msg, "raise", value_bet(0.55))
-                if can_check: return await self.act(ws, msg, "check")
-                return await self.act(ws, msg, "call")
-            if to_call <= pot * 0.35 or equity_est >= pot_odds:
-                return await self.act(ws, msg, "call")
-            return await self.act(ws, msg, "fold")
-
-        # weak
-        if to_call == 0 and can_check:
+        if can_check:
             return await self.act(ws, msg, "check")
+        if move == "call" and "call" in actions:
+            return await self.act(ws, msg, "call")
         if "fold" in actions and to_call > 0:
             return await self.act(ws, msg, "fold")
-        if can_check: return await self.act(ws, msg, "check")
         return await self.act(ws, msg, "call")
 
 def start_health_server():
