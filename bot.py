@@ -10,7 +10,7 @@ import strategy2 as S2
 API_KEY = os.environ.get("OPEN_POKER_API_KEY") or open('/home/sandbox/vetting/.openpoker-secret').read().split('openpoker_apikey=')[1].split('\n')[0].strip()
 WS_URL = "wss://openpoker.ai/ws"
 BUY_IN = 2000          # 100bb at 10/20 - disciplined depth
-SESSION_SECONDS = int(os.environ.get("SESSION_SECONDS", "720"))
+SESSION_SECONDS = int(os.environ.get("SESSION_SECONDS", "0"))  # 0 = play indefinitely (was 720: forced restart every 12 min)
 _log_path = os.environ.get("POKER_LOG", "sessions.log")
 _d = os.path.dirname(_log_path)
 if _d: os.makedirs(_d, exist_ok=True)
@@ -174,7 +174,7 @@ class Bot:
                     raw = await asyncio.wait_for(ws.recv(), timeout=min(remaining, 20))
                 except asyncio.TimeoutError:
                     self.silence = getattr(self, "silence", 0) + 20
-                    if self.silence >= 120:
+                    if self.silence >= 45:  # was 120: table-break stall cost up to 2 min idle
                         log("silence watchdog: rejoining lobby")
                         try:
                             await ws.send(json.dumps({"type": "join_lobby", "buy_in": BUY_IN}))
