@@ -170,11 +170,20 @@ class Bot:
                 try:
                     raw = await asyncio.wait_for(ws.recv(), timeout=min(remaining, 20))
                 except asyncio.TimeoutError:
+                    self.silence = getattr(self, "silence", 0) + 20
+                    if self.silence >= 120:
+                        log("silence watchdog: rejoining lobby")
+                        try:
+                            await ws.send(json.dumps({"type": "join_lobby", "buy_in": BUY_IN}))
+                        except Exception:
+                            pass
+                        self.silence = 0
                     continue
                 except websockets.exceptions.ConnectionClosed as e:
                     log("connection closed by server - raising for reconnect")
                     raise RuntimeError("connection closed by server") from e
                 msg = json.loads(raw)
+                self.silence = 0
                 t = msg.get("type")
                 try:
                     await self.handle(t, msg, ws)
@@ -194,6 +203,8 @@ class Bot:
     async def handle(self, t, msg, ws):
         if t not in self.KNOWN or "error" in msg:
             log("MSG", t, str(msg)[:200])
+        if t == "error" and msg.get("code") == "cannot_rebuy":
+            await ws.send(json.dumps({"type": "join_lobby", "buy_in": BUY_IN}))
         if t == "table_state":
             st = msg.get("state") or msg
             if self.my_seat is None:
@@ -224,7 +235,7 @@ class Bot:
                 self.session_pnl = final - self.start_stack
             log(f"hand {self.hands}: {'WON' if mine else 'lost/fold'} pot={pot} stack={final} pnl={self.session_pnl}")
         elif t == "busted":
-            await ws.send(json.dumps({"type": "rebuy", "amount": 0}))
+            await ws.send(json.dumps({"type": "join_lobby", "buy_in": BUY_IN}))
         elif t == "table_closed" or t == "season_ended":
             await ws.send(json.dumps({"type": "join_lobby", "buy_in": BUY_IN}))
 
