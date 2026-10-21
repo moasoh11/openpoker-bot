@@ -171,9 +171,9 @@ class Bot:
                     raw = await asyncio.wait_for(ws.recv(), timeout=min(remaining, 20))
                 except asyncio.TimeoutError:
                     continue
-                except websockets.exceptions.ConnectionClosed:
-                    log("connection closed by server")
-                    break
+                except websockets.exceptions.ConnectionClosed as e:
+                    log("connection closed by server - raising for reconnect")
+                    raise RuntimeError("connection closed by server") from e
                 msg = json.loads(raw)
                 t = msg.get("type")
                 try:
