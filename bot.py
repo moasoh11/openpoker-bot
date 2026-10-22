@@ -199,7 +199,7 @@ class Bot:
         if amount is not None: payload["amount"] = amount
         await ws.send(json.dumps(payload))
 
-    KNOWN = {"hand_start","hole_cards","community_cards","player_action","your_turn",
+    KNOWN = {"hand_start","hole_cards","community_cards","player_action","your_turn","rebuy_confirmed",
              "hand_result","busted","table_closed","season_ended","table_state",
              "player_joined","player_left","chat","rebuy_result","joined_table","lobby_update"}
 
@@ -207,6 +207,17 @@ class Bot:
         if t not in self.KNOWN or "error" in msg:
             log("MSG", t, str(msg)[:200])
         if t == "error" and msg.get("code") == "cannot_rebuy":
+            await ws.send(json.dumps({"type": "join_lobby", "buy_in": BUY_IN}))
+        if t == "error" and msg.get("code") == "insufficient_season_chips":
+            # felted below min buy-in: request season rebuy (1500 chips, 0 penalty),
+            # then rejoin on rebuy_confirmed; on cooldown, wait it out
+            now = time.time()
+            if now - getattr(self, "_last_rebuy_req", 0) > 60:
+                self._last_rebuy_req = now
+                log("insufficient_season_chips: requesting season rebuy")
+                await ws.send(json.dumps({"type": "rebuy", "amount": 0}))
+        if t == "rebuy_confirmed":
+            log("rebuy confirmed:", msg.get("chip_balance"))
             await ws.send(json.dumps({"type": "join_lobby", "buy_in": BUY_IN}))
         if t == "table_state":
             st = msg.get("state") or msg
